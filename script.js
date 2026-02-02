@@ -1,397 +1,414 @@
-/**
- * Fokus - Modern Pomodoro Timer Application
- * Enhanced with ES6+ features, better organization, and improved UX
- */
+// ============================================
+// SELETORES DO DOM
+// ============================================
+const html = document.querySelector('html');
+const focoBt = document.querySelector('.app__card-button--foco');
+const curtoBt = document.querySelector('.app__card-button--curto');
+const longoBt = document.querySelector('.app__card-button--longo');
+const banner = document.querySelector('.app__image');
+const titulo = document.querySelector('.app__title');
+const botoes = document.querySelectorAll('.app__card-button');
+const startPauseBt = document.querySelector('#start-pause');
+const musicaFocoInput = document.querySelector('#alternar-musica');
+const tempoNaTela = document.querySelector('#timer');
 
-class FokusTimer {
-    constructor() {
-        // DOM Elements
-        this.html = document.documentElement;
-        this.modeButtons = document.querySelectorAll('.app__mode-button');
-        this.banner = document.querySelector('.app__image');
-        this.title = document.querySelector('.app__title');
-        this.startPauseBtn = document.querySelector('#start-pause');
-        this.musicToggle = document.querySelector('#alternar-musica');
-        this.startPauseText = document.querySelector('#start-pause span');
-        this.startPauseIcon = document.querySelector('.app__start-icon');
-        this.timerDisplay = document.querySelector('#timer');
+// Elementos de Tarefas
+const listaTarefas = document.querySelector('#lista-tarefas');
+const btnAdicionarTarefa = document.querySelector('#btn-adicionar-tarefa');
+const modalTarefa = document.querySelector('#modal-tarefa');
+const inputTarefa = document.querySelector('#input-tarefa');
+const btnCancelar = document.querySelector('#btn-cancelar');
+const btnSalvar = document.querySelector('#btn-salvar');
+const tarefaAtiva = document.querySelector('#tarefa-ativa');
+const btnMenuTarefas = document.querySelector('#btn-menu-tarefas');
+const dropdownTarefas = document.querySelector('#dropdown-tarefas');
+const btnLimparConcluidas = document.querySelector('#btn-limpar-concluidas');
+const btnLimparTodas = document.querySelector('#btn-limpar-todas');
 
-        // Audio instances
-        this.audio = {
-            backgroundMusic: new Audio('./sons/luna-rise-part-one.mp3'),
-            play: new Audio('./sons/play.wav'),
-            pause: new Audio('./sons/pause.mp3'),
-            finish: new Audio('./sons/beep.mp3')
-        };
+// ============================================
+// ÁUDIOS
+// ============================================
+const musica = new Audio('./sons/luna-rise-part-one.mp3');
+const audioPlay = new Audio('./sons/play.wav');
+const audioPausa = new Audio('./sons/pause.mp3');
+const audioTempoFinalizado = new Audio('./sons/beep.mp3');
 
-        // Timer state
-        this.state = {
-            currentTime: 1500, // 25 minutes in seconds
-            intervalId: null,
-            isRunning: false,
-            currentMode: 'foco'
-        };
+musica.loop = true;
 
-        // Timer durations (in seconds)
-        this.durations = {
-            foco: 1500,          // 25 minutes
-            'descanso-curto': 300,   // 5 minutes  
-            'descanso-longo': 900    // 15 minutes
-        };
+// ============================================
+// VARIÁVEIS DO TIMER
+// ============================================
+let tempoDecorridoEmSegundos = 1500;
+let intervaloId = null;
 
-        // Mode configurations
-        this.modes = {
-            foco: {
-                title: 'Otimize sua produtividade,<br><strong class="app__title-strong">mergulhe no que importa.</strong>',
-                image: 'foco.png'
-            },
-            'descanso-curto': {
-                title: 'Que tal dar uma respirada? <strong class="app__title-strong">Faça uma pausa curta!</strong>',
-                image: 'descanso-curto.png'
-            },
-            'descanso-longo': {
-                title: 'Hora de voltar à superfície. <strong class="app__title-strong">Faça uma pausa longa.</strong>',
-                image: 'descanso-longo.png'
-            }
-        };
+// ============================================
+// VARIÁVEIS DE TAREFAS
+// ============================================
+let tarefas = JSON.parse(localStorage.getItem('tarefas')) || [];
+let tarefaSelecionada = null;
+let tarefaEditando = null;
 
-        this.init();
-    }
-
-    init() {
-        this.setupAudio();
-        this.bindEvents();
-        this.updateTimerDisplay();
-        this.setMode('foco');
-    }
-
-    setupAudio() {
-        this.audio.backgroundMusic.loop = true;
-        this.audio.backgroundMusic.volume = 0.3;
-        
-        // Optimize audio loading
-        Object.values(this.audio).forEach(audio => {
-            audio.preload = 'auto';
-        });
-    }
-
-    bindEvents() {
-        // Mode buttons
-        this.modeButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const mode = e.target.dataset.contexto;
-                this.setMode(mode);
-            });
-        });
-
-        // Start/Pause button
-        this.startPauseBtn.addEventListener('click', () => {
-            this.toggleTimer();
-        });
-
-        // Music toggle
-        this.musicToggle.addEventListener('change', (e) => {
-            this.toggleBackgroundMusic(e.target.checked);
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            this.handleKeyboard(e);
-        });
-
-        // Visibility API for pause when tab is hidden
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && this.state.isRunning) {
-                this.pauseTimer();
-            }
-        });
-    }
-
-    handleKeyboard(e) {
-        // Prevent shortcuts when typing in inputs
-        if (e.target.tagName === 'INPUT') return;
-
-        switch (e.code) {
-            case 'Space':
-                e.preventDefault();
-                this.toggleTimer();
-                break;
-            case 'Digit1':
-                this.setMode('foco');
-                break;
-            case 'Digit2':
-                this.setMode('descanso-curto');
-                break;
-            case 'Digit3':
-                this.setMode('descanso-longo');
-                break;
-            case 'KeyM':
-                this.musicToggle.checked = !this.musicToggle.checked;
-                this.toggleBackgroundMusic(this.musicToggle.checked);
-                break;
-        }
-    }
-
-    setMode(mode) {
-        if (!this.modes[mode]) return;
-
-        // Reset timer when switching modes
-        if (this.state.isRunning) {
-            this.pauseTimer();
-        }
-
-        this.state.currentMode = mode;
-        this.state.currentTime = this.durations[mode];
-
-        // Update UI
-        this.updateModeButtons(mode);
-        this.updateContext(mode);
-        this.updateTimerDisplay();
-
-        // Announce mode change for screen readers
-        this.announceChange(`Modo ${mode.replace('-', ' ')} selecionado`);
-    }
-
-    updateModeButtons(activeMode) {
-        this.modeButtons.forEach(button => {
-            const isActive = button.dataset.contexto === activeMode;
-            button.classList.toggle('active', isActive);
-            button.setAttribute('aria-selected', isActive);
-        });
-    }
-
-    updateContext(mode) {
-        this.html.setAttribute('data-contexto', mode);
-        
-        const config = this.modes[mode];
-        this.title.innerHTML = config.title;
-        this.banner.src = `./imagens/${config.image}`;
-        this.banner.alt = `Ilustração representando ${mode.replace('-', ' ')}`;
-    }
-
-    toggleTimer() {
-        if (this.state.isRunning) {
-            this.pauseTimer();
-        } else {
-            this.startTimer();
-        }
-    }
-
-    startTimer() {
-        if (this.state.currentTime <= 0) {
-            this.state.currentTime = this.durations[this.state.currentMode];
-        }
-
-        this.playSound('play');
-        this.state.isRunning = true;
-        this.state.intervalId = setInterval(() => this.countdown(), 1000);
-
-        this.updateStartButton('pause');
-        this.announceChange('Timer iniciado');
-    }
-
-    pauseTimer() {
-        this.playSound('pause');
-        this.state.isRunning = false;
-        
-        if (this.state.intervalId) {
-            clearInterval(this.state.intervalId);
-            this.state.intervalId = null;
-        }
-
-        this.updateStartButton('play');
-        this.announceChange('Timer pausado');
-    }
-
-    countdown() {
-        this.state.currentTime--;
-        this.updateTimerDisplay();
-
-        if (this.state.currentTime <= 0) {
-            this.finishTimer();
-        }
-    }
-
-    finishTimer() {
-        this.pauseTimer();
-        this.playSound('finish');
-        
-        // Modern notification instead of alert
-        this.showNotification('Timer finalizado!', 'Tempo concluído. Que tal fazer uma pausa?');
-        
-        // Reset timer for next session
-        this.state.currentTime = this.durations[this.state.currentMode];
-        this.updateTimerDisplay();
-        
-        this.announceChange('Timer finalizado');
-    }
-
-    updateStartButton(state) {
-        const isPlaying = state === 'pause';
-        
-        this.startPauseText.textContent = isPlaying ? 'Pausar' : 'Começar';
-        this.startPauseIcon.src = `./imagens/${isPlaying ? 'pause' : 'play_arrow'}.png`;
-        this.startPauseIcon.alt = isPlaying ? 'Pausar' : 'Iniciar';
-        
-        this.startPauseBtn.setAttribute('aria-label', 
-            isPlaying ? 'Pausar timer' : 'Iniciar timer'
-        );
-    }
-
-    updateTimerDisplay() {
-        const minutes = Math.floor(this.state.currentTime / 60);
-        const seconds = this.state.currentTime % 60;
-        const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
-        this.timerDisplay.textContent = formattedTime;
-        
-        // Update document title for browser tab
-        document.title = `${formattedTime} - Fokus`;
-        
-        // Update progress in page visibility API
-        if ('setAppBadge' in navigator) {
-            navigator.setAppBadge(this.state.currentTime);
-        }
-    }
-
-    toggleBackgroundMusic(enabled) {
-        if (enabled) {
-            this.audio.backgroundMusic.play().catch(e => {
-                console.log('Audio autoplay prevented:', e);
-            });
-        } else {
-            this.audio.backgroundMusic.pause();
-        }
-    }
-
-    playSound(type) {
-        if (this.audio[type]) {
-            // Reset audio to beginning and play
-            this.audio[type].currentTime = 0;
-            this.audio[type].play().catch(e => {
-                console.log('Sound play failed:', e);
-            });
-        }
-    }
-
-    showNotification(title, body) {
-        // Check for notification permission
-        if ('Notification' in window) {
-            if (Notification.permission === 'granted') {
-                new Notification(title, { 
-                    body, 
-                    icon: './imagens/favicon.ico',
-                    tag: 'fokus-timer'
-                });
-            } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        new Notification(title, { 
-                            body, 
-                            icon: './imagens/favicon.ico',
-                            tag: 'fokus-timer'
-                        });
-                    }
-                });
-            }
-        }
-        
-        // Fallback: show in-app notification
-        this.showInAppNotification(title, body);
-    }
-
-    showInAppNotification(title, body) {
-        // Create a modern in-app notification
-        const notification = document.createElement('div');
-        notification.className = 'notification';
-        notification.innerHTML = `
-            <div class="notification-content">
-                <h3>${title}</h3>
-                <p>${body}</p>
-                <button class="notification-close" aria-label="Fechar notificação">×</button>
-            </div>
-        `;
-
-        // Add styles
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--gradient-button);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 0.8rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-            max-width: 300px;
-        `;
-
-        // Add animation keyframes
-        if (!document.querySelector('#notification-styles')) {
-            const style = document.createElement('style');
-            style.id = 'notification-styles';
-            style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                .notification-content h3 { margin: 0 0 0.5rem 0; font-size: 1.1rem; }
-                .notification-content p { margin: 0; font-size: 0.9rem; opacity: 0.9; }
-                .notification-close { 
-                    position: absolute; 
-                    top: 5px; 
-                    right: 10px; 
-                    background: none; 
-                    border: none; 
-                    color: white; 
-                    font-size: 1.2rem; 
-                    cursor: pointer; 
-                }
+// ============================================
+// FUNÇÕES DO TIMER
+// ============================================
+function alterarContexto(contexto) {
+    mostrarTempo();
+    botoes.forEach((btn) => btn.classList.remove('active'));
+    html.setAttribute('data-contexto', contexto);
+    banner.setAttribute('src', `./imagens/${contexto}.png`);
+    
+    switch (contexto) {
+        case 'foco':
+            titulo.innerHTML = `
+                Otimize sua produtividade,<br>
+                <strong class="app__title-strong">mergulhe no que importa.</strong>
             `;
-            document.head.appendChild(style);
-        }
-
-        document.body.appendChild(notification);
-
-        // Remove notification after 5 seconds or when clicked
-        const remove = () => notification.remove();
-        notification.querySelector('.notification-close').addEventListener('click', remove);
-        setTimeout(remove, 5000);
-    }
-
-    announceChange(message) {
-        // Create or update screen reader announcement
-        let announcer = document.querySelector('#sr-announcer');
-        if (!announcer) {
-            announcer = document.createElement('div');
-            announcer.id = 'sr-announcer';
-            announcer.setAttribute('aria-live', 'polite');
-            announcer.setAttribute('aria-atomic', 'true');
-            announcer.style.cssText = `
-                position: absolute;
-                left: -10000px;
-                width: 1px;
-                height: 1px;
-                overflow: hidden;
+            break;
+        case 'descanso-curto':
+            titulo.innerHTML = `
+                Que tal dar uma respirada?<br>
+                <strong class="app__title-strong">Faça uma pausa curta!</strong>
             `;
-            document.body.appendChild(announcer);
-        }
-        
-        announcer.textContent = message;
+            break;
+        case 'descanso-longo':
+            titulo.innerHTML = `
+                Hora de voltar à superfície.<br>
+                <strong class="app__title-strong">Faça uma pausa longa.</strong>
+            `;
+            break;
     }
 }
 
-// Initialize the application when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    new FokusTimer();
-});
+function contagemRegressiva() {
+    if (tempoDecorridoEmSegundos <= 0) {
+        audioTempoFinalizado.play();
+        zerar();
+        
+        // Notificação visual
+        if (Notification.permission === 'granted') {
+            new Notification('Fokus', {
+                body: 'Tempo finalizado! 🎉',
+                icon: './imagens/favicon.ico'
+            });
+        }
+        
+        // Marca tarefa como concluída se houver uma ativa
+        if (tarefaSelecionada) {
+            tarefaSelecionada.concluida = true;
+            salvarTarefas();
+            renderizarTarefas();
+            atualizarTarefaAtiva();
+        }
+        return;
+    }
+    tempoDecorridoEmSegundos -= 1;
+    mostrarTempo();
+}
 
-// Service Worker registration for PWA capabilities (optional)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(registration => console.log('SW registered'))
-            .catch(error => console.log('SW registration failed'));
+function iniciarOuPausar() {
+    if (intervaloId) {
+        audioPausa.play();
+        zerar();
+        return;
+    }
+    audioPlay.play();
+    intervaloId = setInterval(contagemRegressiva, 1000);
+    startPauseBt.innerHTML = '<i class="fa-solid fa-pause"></i><span>Pausar</span>';
+    startPauseBt.classList.add('timer-running');
+    
+    // Mostra a tarefa selecionada em andamento
+    if (tarefaSelecionada && !tarefaSelecionada.concluida) {
+        tarefaAtiva.textContent = tarefaSelecionada.descricao;
+        tarefaAtiva.classList.add('em-andamento');
+    }
+}
+
+function zerar() {
+    clearInterval(intervaloId);
+    startPauseBt.innerHTML = '<i class="fa-solid fa-play"></i><span>Começar</span>';
+    startPauseBt.classList.remove('timer-running');
+    tarefaAtiva.classList.remove('em-andamento');
+    intervaloId = null;
+}
+
+function mostrarTempo() {
+    const tempo = new Date(tempoDecorridoEmSegundos * 1000);
+    const tempoFormatado = tempo.toLocaleTimeString('pt-BR', { minute: '2-digit', second: '2-digit' });
+    tempoNaTela.textContent = tempoFormatado;
+}
+
+// ============================================
+// FUNÇÕES DE TAREFAS
+// ============================================
+function salvarTarefas() {
+    localStorage.setItem('tarefas', JSON.stringify(tarefas));
+}
+
+function criarElementoTarefa(tarefa) {
+    const li = document.createElement('li');
+    li.classList.add('app__task-item');
+    li.dataset.id = tarefa.id;
+    
+    if (tarefa.concluida) {
+        li.classList.add('completed');
+    }
+    
+    if (tarefaSelecionada && tarefaSelecionada.id === tarefa.id) {
+        li.classList.add('active');
+    }
+    
+    li.innerHTML = `
+        <div class="app__task-checkbox">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <p class="app__task-text">${tarefa.descricao}</p>
+        <div class="app__task-actions">
+            <button class="app__task-edit-btn" title="Editar tarefa">
+                <i class="fa-solid fa-pen"></i>
+            </button>
+            <button class="app__task-delete-btn" title="Remover tarefa">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    // Evento para selecionar tarefa
+    li.addEventListener('click', (e) => {
+        if (!e.target.closest('.app__task-checkbox') && !e.target.closest('.app__task-actions')) {
+            selecionarTarefa(tarefa, li);
+        }
+    });
+    
+    // Evento para marcar como concluída
+    const checkbox = li.querySelector('.app__task-checkbox');
+    checkbox.addEventListener('click', () => {
+        tarefa.concluida = !tarefa.concluida;
+        salvarTarefas();
+        renderizarTarefas();
+        if (tarefaSelecionada && tarefaSelecionada.id === tarefa.id) {
+            atualizarTarefaAtiva();
+        }
+    });
+    
+    // Evento para editar
+    const btnEditar = li.querySelector('.app__task-edit-btn');
+    btnEditar.addEventListener('click', () => {
+        tarefaEditando = tarefa;
+        inputTarefa.value = tarefa.descricao;
+        modalTarefa.classList.add('active');
+        inputTarefa.focus();
+    });
+    
+    // Evento para deletar
+    const btnDeletar = li.querySelector('.app__task-delete-btn');
+    btnDeletar.addEventListener('click', () => {
+        removerTarefa(tarefa.id);
+    });
+    
+    return li;
+}
+
+function selecionarTarefa(tarefa, elemento) {
+    document.querySelectorAll('.app__task-item').forEach(item => item.classList.remove('active'));
+    
+    if (tarefaSelecionada && tarefaSelecionada.id === tarefa.id) {
+        tarefaSelecionada = null;
+    } else {
+        tarefaSelecionada = tarefa;
+        elemento.classList.add('active');
+    }
+    
+    atualizarTarefaAtiva();
+}
+
+function atualizarTarefaAtiva() {
+    if (tarefaSelecionada && !tarefaSelecionada.concluida) {
+        tarefaAtiva.textContent = tarefaSelecionada.descricao;
+    } else {
+        tarefaAtiva.textContent = 'Selecione uma tarefa';
+        tarefaSelecionada = null;
+    }
+}
+
+function renderizarTarefas() {
+    listaTarefas.innerHTML = '';
+    tarefas.forEach(tarefa => {
+        const elemento = criarElementoTarefa(tarefa);
+        listaTarefas.appendChild(elemento);
     });
 }
+
+function adicionarTarefa(descricao) {
+    const novaTarefa = {
+        id: Date.now(),
+        descricao: descricao.trim(),
+        concluida: false
+    };
+    tarefas.push(novaTarefa);
+    salvarTarefas();
+    renderizarTarefas();
+}
+
+function editarTarefa(descricao) {
+    const index = tarefas.findIndex(t => t.id === tarefaEditando.id);
+    if (index !== -1) {
+        tarefas[index].descricao = descricao.trim();
+        salvarTarefas();
+        renderizarTarefas();
+        if (tarefaSelecionada && tarefaSelecionada.id === tarefaEditando.id) {
+            tarefaSelecionada.descricao = descricao.trim();
+            atualizarTarefaAtiva();
+        }
+    }
+    tarefaEditando = null;
+}
+
+function removerTarefa(id) {
+    if (confirm('Deseja remover esta tarefa?')) {
+        tarefas = tarefas.filter(t => t.id !== id);
+        if (tarefaSelecionada && tarefaSelecionada.id === id) {
+            tarefaSelecionada = null;
+        }
+        salvarTarefas();
+        renderizarTarefas();
+        atualizarTarefaAtiva();
+    }
+}
+
+function limparTarefasConcluidas() {
+    tarefas = tarefas.filter(t => !t.concluida);
+    salvarTarefas();
+    renderizarTarefas();
+    atualizarTarefaAtiva();
+}
+
+function limparTodasTarefas() {
+    if (confirm('Tem certeza que deseja excluir todas as tarefas?')) {
+        tarefas = [];
+        tarefaSelecionada = null;
+        salvarTarefas();
+        renderizarTarefas();
+        atualizarTarefaAtiva();
+    }
+}
+
+// ============================================
+// EVENT LISTENERS - TIMER
+// ============================================
+musicaFocoInput.addEventListener('change', () => {
+    if (musica.paused) {
+        musica.play();
+    } else {
+        musica.pause();
+    }
+});
+
+focoBt.addEventListener('click', () => {
+    tempoDecorridoEmSegundos = 1500;
+    alterarContexto('foco');
+    focoBt.classList.add('active');
+});
+
+curtoBt.addEventListener('click', () => {
+    tempoDecorridoEmSegundos = 300;
+    alterarContexto('descanso-curto');
+    curtoBt.classList.add('active');
+});
+
+longoBt.addEventListener('click', () => {
+    tempoDecorridoEmSegundos = 900;
+    alterarContexto('descanso-longo');
+    longoBt.classList.add('active');
+});
+
+startPauseBt.addEventListener('click', iniciarOuPausar);
+
+// ============================================
+// EVENT LISTENERS - TAREFAS
+// ============================================
+btnAdicionarTarefa.addEventListener('click', () => {
+    tarefaEditando = null;
+    inputTarefa.value = '';
+    modalTarefa.classList.add('active');
+    inputTarefa.focus();
+});
+
+btnCancelar.addEventListener('click', () => {
+    modalTarefa.classList.remove('active');
+    tarefaEditando = null;
+});
+
+btnSalvar.addEventListener('click', () => {
+    const descricao = inputTarefa.value.trim();
+    if (descricao) {
+        if (tarefaEditando) {
+            editarTarefa(descricao);
+        } else {
+            adicionarTarefa(descricao);
+        }
+        modalTarefa.classList.remove('active');
+    }
+});
+
+inputTarefa.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        btnSalvar.click();
+    }
+});
+
+// Fechar modal ao clicar fora
+modalTarefa.addEventListener('click', (e) => {
+    if (e.target === modalTarefa) {
+        modalTarefa.classList.remove('active');
+        tarefaEditando = null;
+    }
+});
+
+// Menu dropdown
+btnMenuTarefas.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdownTarefas.classList.toggle('active');
+});
+
+document.addEventListener('click', () => {
+    dropdownTarefas.classList.remove('active');
+});
+
+btnLimparConcluidas.addEventListener('click', () => {
+    limparTarefasConcluidas();
+    dropdownTarefas.classList.remove('active');
+});
+
+btnLimparTodas.addEventListener('click', () => {
+    limparTodasTarefas();
+    dropdownTarefas.classList.remove('active');
+});
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+// Solicitar permissão para notificações
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+// Renderizar tarefas salvas
+renderizarTarefas();
+
+// Mostrar tempo inicial
+mostrarTempo();
+
+// Atalhos de teclado
+document.addEventListener('keydown', (e) => {
+    // Espaço para iniciar/pausar (quando não estiver no input)
+    if (e.code === 'Space' && document.activeElement !== inputTarefa) {
+        e.preventDefault();
+        iniciarOuPausar();
+    }
+    
+    // Escape para fechar modal
+    if (e.key === 'Escape' && modalTarefa.classList.contains('active')) {
+        modalTarefa.classList.remove('active');
+        tarefaEditando = null;
+    }
+});

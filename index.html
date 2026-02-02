@@ -4,71 +4,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Fokus - Aplicação de produtividade com técnica Pomodoro">
-    <title>Fokus - Otimize sua Produtividade</title>
+    <title>Fokus</title>
     <link rel="shortcut icon" href="./imagens/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css"
+        integrity="sha512-NmLkDIU1C/C88wi324HBc+S2kLhi08PN5GDeUVVVC/BVt/9Izdsc9SVeVfA1UZbY3sHUlDSyRXhCzHfr6hmPPw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Unbounded:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="manifest" href="./manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Unbounded:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="./styles.css">
     <script src="./script.js" defer></script>
 </head>
 
 <body>
-    <div class="app">
+    <main class="app">
         <header class="app__header">
-            <div class="app__logo-container">
-                <img class="app__logo" src="./imagens/logo.png" alt="Fokus Logo">
-            </div>
+            <figure class="app__logo-figure">
+                <img class="app__logo-image" src="./imagens/logo.png" alt="Logo Fokus">
+            </figure>
         </header>
-        
-        <main class="app__main">
-            <section class="app__hero">
-                <div class="app__hero-content">
-                    <h1 class="app__title">
-                        Otimize sua produtividade,<br>
-                        <strong class="app__title-strong">mergulhe no que importa.</strong>
-                    </h1>
-                    <div class="app__hero-image">
-                        <img class="app__image" src="./imagens/foco.png" alt="Ilustração representando foco">
-                    </div>
-                </div>
+
+        <div class="app__content">
+            <section class="app__section-banner-container">
+                <h1 class="app__title">
+                    Otimize sua produtividade,<br>
+                    <strong class="app__title-strong">mergulhe no que importa.</strong>
+                </h1>
+                <figure class="app__image-figure">
+                    <img class="app__image" src="./imagens/foco.png" alt="Ilustração de foco">
+                </figure>
             </section>
-            <section class="app__timer-section">
+
+            <section class="app__section-card-container">
                 <div class="app__card">
-                    <nav class="app__mode-nav" role="tablist" aria-label="Modos de foco">
-                        <button data-contexto="foco" class="app__mode-button active" role="tab" aria-selected="true" aria-controls="timer">Foco</button>
-                        <button data-contexto="descanso-curto" class="app__mode-button" role="tab" aria-selected="false" aria-controls="timer">Descanso curto</button>
-                        <button data-contexto="descanso-longo" class="app__mode-button" role="tab" aria-selected="false" aria-controls="timer">Descanso longo</button>
-                    </nav>
+                    <ul class="app__card-list">
+                        <li class="app__card-list-item">
+                            <button data-contexto="foco" class="app__card-button app__card-button--foco active">
+                                <i class="fa-solid fa-bullseye"></i> Foco
+                            </button>
+                        </li>
+                        <li class="app__card-list-item">
+                            <button data-contexto="descanso-curto" class="app__card-button app__card-button--curto">
+                                <i class="fa-solid fa-mug-hot"></i> Descanso curto
+                            </button>
+                        </li>
+                        <li class="app__card-list-item">
+                            <button data-contexto="descanso-longo" class="app__card-button app__card-button--longo">
+                                <i class="fa-solid fa-bed"></i> Descanso longo
+                            </button>
+                        </li>
+                    </ul>
                     
-                    <div id="timer" class="app__timer" role="tabpanel" aria-label="Timer"></div>
+                    <div id="timer" class="app__card-timer">25:00</div>
                     
-                    <div class="app__controls">
-                        <div class="app__music-toggle">
-                            <label class="toggle" for="alternar-musica">
-                                <input class="toggle-checkbox" type="checkbox" id="alternar-musica" aria-label="Alternar música">
+                    <div class="app__card-controls">
+                        <div class="app__card-music-toggle">
+                            <label class="toggle">
+                                <input class="toggle-checkbox" type="checkbox" id="alternar-musica">
                                 <div class="toggle-switch"></div>
-                                <span class="toggle-label">Música</span>
+                            </label>
+                            <label class="app__card-list-label" for="alternar-musica">
+                                <i class="fa-solid fa-music"></i> Música
                             </label>
                         </div>
-                        
-                        <button id="start-pause" class="app__start-button" aria-label="Iniciar ou pausar timer">
-                            <img class="app__start-icon" src="./imagens/play_arrow.png" alt="">
+                    </div>
+                    
+                    <div class="app__card-primary-button-wrapper">
+                        <button id="start-pause" class="app__card-primary-button">
+                            <i class="fa-solid fa-play"></i>
                             <span>Começar</span>
                         </button>
                     </div>
                 </div>
             </section>
-        </main>
+
+            <!-- Seção de Tarefas -->
+            <section class="app__section-tasks">
+                <div class="app__tasks-header">
+                    <p class="app__tasks-active">
+                        <span class="app__tasks-active-label">#Em andamento:</span>
+                        <span class="app__tasks-active-name" id="tarefa-ativa">Selecione uma tarefa</span>
+                    </p>
+                </div>
+
+                <div class="app__tasks-container">
+                    <div class="app__tasks-title-wrapper">
+                        <h2 class="app__tasks-title">Lista de tarefas:</h2>
+                        <button class="app__tasks-menu-btn" id="btn-menu-tarefas">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                        <div class="app__tasks-dropdown" id="dropdown-tarefas">
+                            <button id="btn-limpar-concluidas">
+                                <i class="fa-solid fa-check-double"></i> Limpar concluídas
+                            </button>
+                            <button id="btn-limpar-todas">
+                                <i class="fa-solid fa-trash"></i> Limpar todas
+                            </button>
+                        </div>
+                    </div>
+
+                    <ul class="app__tasks-list" id="lista-tarefas">
+                        <!-- Tarefas serão inseridas aqui via JavaScript -->
+                    </ul>
+
+                    <div class="app__tasks-add">
+                        <button class="app__tasks-add-btn" id="btn-adicionar-tarefa">
+                            <i class="fa-solid fa-plus"></i> Adicionar tarefa
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal para adicionar tarefa -->
+                <div class="app__modal" id="modal-tarefa">
+                    <div class="app__modal-content">
+                        <h3 class="app__modal-title">Nova tarefa</h3>
+                        <input type="text" class="app__modal-input" id="input-tarefa" placeholder="Digite sua tarefa..." maxlength="100">
+                        <div class="app__modal-buttons">
+                            <button class="app__modal-btn app__modal-btn--cancel" id="btn-cancelar">Cancelar</button>
+                            <button class="app__modal-btn app__modal-btn--save" id="btn-salvar">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
 
         <footer class="app__footer">
             <p class="app__footer-text">
-                Projeto fictício e sem fins comerciais. Imagens geradas por IA no Adobe Firefly. Desenvolvido por Alura.
+                Projeto fictício e sem fins comerciais. Desenvolvido com <i class="fa-solid fa-heart"></i> por Alura.
             </p>
         </footer>
-    </div>
+    </main>
 </body>
 
 </html>
